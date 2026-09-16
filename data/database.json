@@ -1,0 +1,145 @@
+{
+  "members": [
+    {
+      "id": "mbr_1789524561982_im9xq",
+      "memberId": "MBR-000007",
+      "nama": "Zulhairi bin Mansor",
+      "telefon": "011-99887766",
+      "nric": "930101085432",
+      "email": "",
+      "alamat": "No 99, Jalan Harmoni, 50000 Kuala Lumpur",
+      "sponsorId": "SP-0001",
+      "tarikhDaftar": "2026-09-16T02:09:21.982Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:21.982Z"
+    },
+    {
+      "id": "demo-1",
+      "memberId": "MBR-000001",
+      "nama": "Ahmad bin Ali",
+      "telefon": "011-8888 7777",
+      "nric": "900101-02-1234",
+      "email": "ahmad@example.com",
+      "alamat": "No. 12, Jalan Kangar Maju, 01000 Kangar, Perlis",
+      "sponsorId": "SP-0001",
+      "tarikhDaftar": "2026-08-12T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    },
+    {
+      "id": "demo-2",
+      "memberId": "MBR-000002",
+      "nama": "Siti Aminah binti Razak",
+      "telefon": "012-7777 6666",
+      "nric": "920202-02-5678",
+      "email": "siti@example.com",
+      "alamat": "Lot 45, Lorong Merbok, 05000 Alor Setar, Kedah",
+      "sponsorId": "SP-0002",
+      "tarikhDaftar": "2026-08-22T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    },
+    {
+      "id": "demo-3",
+      "memberId": "MBR-000003",
+      "nama": "Muhammad Faiz bin Kamaruddin",
+      "telefon": "019-3333 2222",
+      "nric": "880512-08-3345",
+      "email": "faiz@example.com",
+      "alamat": "B-3-10, Pangsapuri Indah, Jalan Ipoh, 30000 Ipoh, Perak",
+      "sponsorId": "SP-0001",
+      "tarikhDaftar": "2026-09-01T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    },
+    {
+      "id": "demo-4",
+      "memberId": "MBR-000004",
+      "nama": "Nurul Huda binti Othman",
+      "telefon": "017-5555 4444",
+      "nric": "951120-10-8890",
+      "email": "huda@example.com",
+      "alamat": "No 7, Taman Melati Utama, 53100 Gombak, Kuala Lumpur",
+      "sponsorId": "SP-0003",
+      "tarikhDaftar": "2026-09-11T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    },
+    {
+      "id": "demo-5",
+      "memberId": "MBR-000005",
+      "nama": "Tan Wei Lun",
+      "telefon": "016-2222 1111",
+      "nric": "910815-01-6789",
+      "email": "weilun@example.com",
+      "alamat": "23, Jalan Molek 2/4, Taman Molek, 81100 Johor Bahru, Johor",
+      "sponsorId": "SP-0001",
+      "tarikhDaftar": "2026-09-14T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    },
+    {
+      "id": "demo-6",
+      "memberId": "MBR-000006",
+      "nama": "Kavitha a/p Subramaniam",
+      "telefon": "014-9999 8888",
+      "nric": "940304-05-4321",
+      "email": "kavitha@example.com",
+      "alamat": "No. 18, Jalan Rasah, 70300 Seremban, Negeri Sembilan",
+      "sponsorId": "SP-0002",
+      "tarikhDaftar": "2026-09-16T02:09:18.578Z",
+      "status": "ACTIVE",
+      "updatedAt": "2026-09-16T02:09:18.578Z"
+    }
+  ],
+  "whatsappLogs": [
+    {
+      "id": "wlog-1789524561983-77h0",
+      "memberId": "MBR-000007",
+      "nama": "Zulhairi bin Mansor",
+      "recipient": "601120798015",
+      "messageType": "ADMIN_NOTIFY",
+      "content": "🔔 PENDAFTARAN AHLI BARU\n\nNama:\nZulhairi bin Mansor\n\nTelefon:\n011-99887766\n\nNRIC:\n******-**-5432\n\nMember ID:\nMBR-000007\n\nSponsor:\nSP-0001\n\nTarikh:\n16/09/2026\n\nStatus:\n✅ BERJAYA DIDAFTARKAN",
+      "status": "MANUAL",
+      "sentAt": "2026-09-16T02:09:21.983Z"
+    },
+    {
+      "id": "log-init-1",
+      "memberId": "MBR-000001",
+      "nama": "Ahmad bin Ali",
+      "recipient": "601120798015",
+      "messageType": "ADMIN_NOTIFY",
+      "content": "Notifikasi pendaftaran ahli baru MBR-000001",
+      "status": "SENT",
+      "sentAt": "2026-08-12T02:09:18.578Z"
+    }
+  ],
+  "activityLogs": [
+    {
+      "id": "act-1789524561982-s1eml",
+      "user": "Admin",
+      "action": "CREATE_MEMBER",
+      "memberId": "mbr_1789524561982_im9xq",
+      "timestamp": "2026-09-16T02:09:21.982Z",
+      "details": "Pendaftaran ahli baru Zulhairi bin Mansor (MBR-000007)"
+    },
+    {
+      "id": "act-init-1",
+      "user": "System Admin",
+      "action": "SEED_DEMO",
+      "timestamp": "2026-09-16T02:09:18.578Z",
+      "details": "Sistem diaktifkan dengan 6 rekod permulaan."
+    }
+  ],
+  "settings": {
+    "appName": "Member Management System",
+    "memberPrefix": "MBR-",
+    "memberDigits": 6,
+    "timezone": "Asia/Kuala_Lumpur",
+    "whatsappEnabled": false,
+    "adminWhatsAppNumber": "601120798015",
+    "welcomeTemplate": "Assalamualaikum {{Nama}}.\n\nTerima kasih kerana telah mendaftar sebagai ahli.\n\nMember ID anda:\n{{MemberID}}\n\nTerima kasih.",
+    "adminNotifyTemplate": "🔔 PENDAFTARAN AHLI BARU\n\nNama:\n{{Nama}}\n\nTelefon:\n{{Telefon}}\n\nNRIC:\n{{MaskedNRIC}}\n\nMember ID:\n{{MemberID}}\n\nSponsor:\n{{SponsorID}}\n\nTarikh:\n{{Tarikh}}\n\nStatus:\n✅ BERJAYA DIDAFTARKAN"
+  },
+  "lastMemberCounter": 7
+}

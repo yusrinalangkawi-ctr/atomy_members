@@ -1,0 +1,6 @@
+{
+  "name": "Member Management System",
+  "description": "Sistem Pengurusan Keahlian profesional mobile-first dengan auto Member ID, carian & penapisan, eksport Excel/CSV/PDF, dan integrasi WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

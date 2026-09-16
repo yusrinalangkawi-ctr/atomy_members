@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Member Management System</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS (xlsx) for direct Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Safe Area Insets for Mobile */
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 0.75rem);
+    }
+    /* Hide scrollbars cleanly */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col md:flex-row">
+
+  <!-- ======================================================= -->
+  <!-- 0. LOGIN MODAL (DISPLAYED WHEN NOT AUTHENTICATED)       -->
+  <!-- ======================================================= -->
+  <div id="login-modal-screen" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 border border-slate-200">
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center mx-auto shadow-md">
+          <i data-lucide="building-2" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Portal Pentadbir</h2>
+        <p class="text-xs sm:text-sm text-slate-500">Sistem Pengurusan Keahlian (Google Apps Script)</p>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Nama Pengguna (Username)</label>
+          <input id="login-username" type="text" value="admin" required class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Kata Laluan (Password)</label>
+          <input id="login-password" type="password" required placeholder="Masukkan kata laluan..." class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+            <span>Akses Lalai: admin / admin123</span>
+            <button type="button" onclick="fillDemoCredentials()" class="text-emerald-600 font-semibold hover:underline">Isi Auto</button>
+          </div>
+        </div>
+
+        <button id="btn-login-submit" type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 min-h-[46px]">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span id="btn-login-text">LOG MASUK PORTAL</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 1. DESKTOP SIDEBAR (>=768px)                            -->
+  <!-- ======================================================= -->
+  <aside id="desktop-sidebar" class="hidden md:flex flex-col w-64 bg-slate-900 text-white min-h-screen shrink-0 border-r border-slate-800 select-none">
+    <!-- Brand / Header -->
+    <div class="p-5 border-b border-slate-800/80 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-md">
+        <i data-lucide="building-2" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold tracking-tight text-white leading-tight">Member Portal</h1>
+        <p class="text-[11px] text-emerald-400 font-medium">Google Apps Script</p>
+      </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 space-y-1 flex-1">
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800/90 transition-all">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 text-emerald-400"></i>
+        <span>Dashboard</span>
+      </button>
+      <button onclick="switchTab('members')" id="nav-btn-members" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        <span>Senarai Ahli</span>
+        <span id="badge-total-members" class="ml-auto bg-slate-800 text-[10px] text-slate-300 px-2 py-0.5 rounded-full font-bold">0</span>
+      </button>
+      <button onclick="switchTab('register')" id="nav-btn-register" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="user-plus" class="w-4 h-4"></i>
+        <span>Daftar Ahli Baru</span>
+      </button>
+      <button onclick="switchTab('report')" id="nav-btn-report" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="file-bar-chart" class="w-4 h-4"></i>
+        <span>Laporan & Analisis</span>
+      </button>
+      <button onclick="switchTab('whatsapp')" id="nav-btn-whatsapp" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        <span>WhatsApp Gateway</span>
+      </button>
+      <button onclick="switchTab('logs')" id="nav-btn-logs" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="history" class="w-4 h-4"></i>
+        <span>Audit Trail</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-btn-settings" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        <span>Tetapan Sistem</span>
+      </button>
+    </nav>
+
+    <!-- Admin Profile / Logout -->
+    <div class="p-3 border-t border-slate-800/80">
+      <div class="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600/30 text-emerald-400 flex items-center justify-center font-bold text-xs">
+            AD
+          </div>
+          <div>
+            <span id="sidebar-admin-name" class="text-xs font-bold text-white block">Administrator</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Google Sheets DB</span>
+          </div>
+        </div>
+        <button onclick="handleLogout()" title="Log Keluar" class="p-1.5 text-slate-400 hover:text-rose-400 transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================= -->
+  <!-- 2. MAIN APPLICATION CONTENT WRAPPER                     -->
+  <!-- ======================================================= -->
+  <div class="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200/90 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
+      <div class="flex items-center gap-2.5">
+        <div class="md:hidden w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+          <i data-lucide="building-2" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h2 id="page-title" class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-tight">Dashboard Pentadbir</h2>
+          <p id="page-subtitle" class="text-[11px] text-slate-500">Sistem Pengurusan Keahlian</p>
+        </div>
+      </div>
+
+      <!-- Quick Action / Status -->
+      <div class="flex items-center gap-2">
+        <button onclick="switchTab('whatsapp')" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+          <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>WhatsApp</span>
+        </button>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[11px] font-bold rounded-full border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Google Script</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Global Toast Alert Container -->
+    <div id="toast-container" class="fixed top-16 right-4 left-4 sm:left-auto sm:w-96 z-50 pointer-events-none space-y-2"></div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-1">
+
+      <!-- ========================================== -->
+      <!-- VIEW A: DASHBOARD VIEW                     -->
+      <!-- ========================================== -->
+      <div id="view-dashboard" class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Total Members -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">JUMLAH AHLI</span>
+            <div id="stat-total" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</div>
+            <p class="text-[11px] text-slate-400 mt-1">Semua rekod berdaftar</p>
+          </div>
+
+          <!-- Active Members -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider block">AHLI AKTIF</span>
+            <div id="stat-active" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0</div>
+            <p class="text-[11px] text-slate-400 mt-1">Status keahlian aktif</p>
+          </div>
+
+          <!-- New This Month -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+            <span class="text-xs font-bold text-amber-700 uppercase tracking-wider block">BARU BULAN INI</span>
+            <div id="stat-month" class="text-2xl sm:text-3xl font-extrabold text-amber-800 mt-1">0</div>
+            <p class="text-[11px] text-slate-400 mt-1">Pendaftaran terkini</p>
+          </div>
+
+          <!-- Active Sponsors -->
+          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+            <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider block">SPONSOR AKTIF</span>
+            <div id="stat-sponsors" class="text-2xl sm:text-3xl font-extrabold text-indigo-800 mt-1">0</div>
+            <p class="text-[11px] text-slate-400 mt-1">Rangkaian sponsor unik</p>
+          </div>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button onclick="switchTab('register')" class="flex items-center justify-between p-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl shadow-sm transition-all text-left">
+            <div>
+              <strong class="text-sm sm:text-base font-bold block">+ Daftar Ahli Baru</strong>
+              <span class="text-xs text-emerald-100">Borang pendaftaran rasmi</span>
+            </div>
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+          <button onclick="switchTab('members')" class="flex items-center justify-between p-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl shadow-sm transition-all text-left">
+            <div>
+              <strong class="text-sm sm:text-base font-bold block">👥 Senarai Ahli</strong>
+              <span class="text-xs text-slate-500">Carian & maklumat lengkap</span>
+            </div>
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-400"></i>
+          </button>
+          <button onclick="switchTab('report')" class="flex items-center justify-between p-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl shadow-sm transition-all text-left">
+            <div>
+              <strong class="text-sm sm:text-base font-bold block">📊 Laporan & Analisis</strong>
+              <span class="text-xs text-slate-500">Eksport Excel, CSV, & Print</span>
+            </div>
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-400"></i>
+          </button>
+        </div>
+
+        <!-- Monthly Trend Bar Visualizer -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900">Trend Pertumbuhan Keahlian</h3>
+              <p class="text-xs text-slate-500">Taburan pendaftaran ahli bagi 6 bulan terkini.</p>
+            </div>
+          </div>
+          <div id="dashboard-trend-bars" class="grid grid-cols-6 gap-2 pt-4 items-end h-36">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Recent Registered Members -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Pendaftaran Terkini</h3>
+            <button onclick="switchTab('members')" class="text-xs font-semibold text-emerald-600 hover:underline">Lihat Semua →</button>
+          </div>
+          <div id="dashboard-recent-members" class="divide-y divide-slate-100 mt-2">
+            <p class="text-xs text-slate-400 py-4 text-center">Memuatkan rekod terkini...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW B: SENARAI AHLI (MEMBER LIST)         -->
+      <!-- ========================================== -->
+      <div id="view-members" class="hidden p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4">
+        <!-- Top Toolbar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-extrabold text-slate-900">Senarai Ahli</h2>
+              <span id="badge-member-count" class="text-xs font-bold text-slate-600 bg-slate-200 px-2.5 py-0.5 rounded-full">0 Rekod</span>
+            </div>
+            <p class="text-xs text-slate-500">Uruskan dan tapis maklumat ahli yang berdaftar.</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="exportToExcelDirect()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-colors min-h-[44px]">
+              <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+              <span>Eksport Excel</span>
+            </button>
+            <button onclick="switchTab('register')" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all min-h-[44px]">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Daftar Ahli</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm space-y-3">
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input id="input-search" type="text" oninput="handleSearchDebounced()" placeholder="Cari nama, telefon, ID, NRIC..." class="w-full h-11 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <button onclick="toggleFilterModal(true)" id="btn-filter-trigger" class="inline-flex items-center gap-1.5 px-3.5 h-11 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
+              <span class="hidden sm:inline">Filter</span>
+            </button>
+          </div>
+
+          <!-- Active Filter Chips -->
+          <div id="active-filter-chips" class="hidden flex flex-wrap items-center gap-2 text-xs pt-2 border-t border-slate-100">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase">Aktif:</span>
+            <div id="chips-container" class="flex flex-wrap gap-1.5"></div>
+            <button onclick="resetFilters()" class="text-xs text-rose-600 hover:underline font-semibold ml-auto">Reset</button>
+          </div>
+        </div>
+
+        <!-- Mobile Card List Container -->
+        <div id="mobile-cards-container" class="md:hidden space-y-3"></div>
+
+        <!-- Desktop Table Container -->
+        <div class="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">Member ID</th>
+                  <th class="py-3 px-4">Nama Penuh</th>
+                  <th class="py-3 px-4">Telefon</th>
+                  <th class="py-3 px-4">NRIC</th>
+                  <th class="py-3 px-4">Sponsor</th>
+                  <th class="py-3 px-4">Tarikh Daftar</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-right">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="desktop-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="members-empty-state" class="hidden py-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm max-w-md mx-auto my-6 p-6">
+          <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="users" class="w-7 h-7"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-800">TIADA REKOD DIJUMPAI</h3>
+          <p class="text-xs text-slate-500 mt-1">Sila periksa kata carian atau tetapan penapis anda.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="pagination-bar" class="flex items-center justify-between text-xs text-slate-500 pt-2">
+          <span id="pagination-info">Halaman 1</span>
+          <div class="flex items-center gap-1">
+            <button id="btn-page-prev" onclick="changePage(-1)" class="p-2 border rounded-lg bg-white disabled:opacity-40 min-h-[38px] min-w-[38px]">←</button>
+            <button id="btn-page-next" onclick="changePage(1)" class="p-2 border rounded-lg bg-white disabled:opacity-40 min-h-[38px] min-w-[38px]">→</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW C: DAFTAR AHLI BARU (REGISTER FORM)   -->
+      <!-- ========================================== -->
+      <div id="view-register" class="hidden p-4 sm:p-6 lg:p-8 max-w-xl mx-auto">
+        <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+          <div class="mb-5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">BORANG RASMI</span>
+            <h2 class="text-xl font-extrabold text-slate-900 mt-2">Daftar Ahli Baru</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Member ID dijana secara automatik dengan perlindungan duplikasi.</p>
+          </div>
+
+          <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+            <!-- Nama Penuh -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">NAMA PENUH *</label>
+              <input id="reg-nama" type="text" required placeholder="Ahmad bin Ali" class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <!-- No Telefon -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">NO TELEFON *</label>
+              <input id="reg-telefon" type="tel" required placeholder="011-88887777" class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <p class="text-[11px] text-slate-400 mt-1">Cth: 011-88887777 atau 0123456789</p>
+            </div>
+
+            <!-- NRIC -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">NRIC (12 DIGIT) *</label>
+              <input id="reg-nric" type="text" required maxlength="14" placeholder="900101-02-1234" class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <!-- Emel (Pilihan) -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">EMAIL (PILIHAN)</label>
+              <input id="reg-email" type="email" placeholder="nama@email.com" class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <!-- ID Sponsor (Pilihan) -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">ID SPONSOR (PILIHAN)</label>
+              <input id="reg-sponsor" type="text" placeholder="SP-0001 / MBR-000001" class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <!-- Alamat Penuh -->
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">ALAMAT PENUH *</label>
+              <textarea id="reg-alamat" rows="3" required placeholder="Masukkan alamat kediaman lengkap..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+              <button id="btn-submit-reg" type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-slate-300 text-white font-bold text-sm sm:text-base rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 min-h-[50px]">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                <span id="btn-reg-text">✓ DAFTAR AHLI</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW D: SKRIN KEJAYAAN (SUCCESS SCREEN)    -->
+      <!-- ========================================== -->
+      <div id="view-success" class="hidden p-4 sm:p-6 lg:p-8 max-w-xl mx-auto">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl text-center relative overflow-hidden">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 ring-8 ring-emerald-50">
+            <i data-lucide="check-circle-2" class="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.2]"></i>
+          </div>
+
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            PENDAFTARAN BERJAYA
+          </span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">Ahli Berjaya Didaftarkan</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">Rekod telah disimpan ke Google Sheet pangkalan data.</p>
+
+          <!-- Member ID Box -->
+          <div class="my-6 p-5 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-md">
+            <span class="text-[11px] font-semibold uppercase tracking-widest text-emerald-400 block mb-1">MEMBER ID (JANAAN AUTOMATIK)</span>
+            <div id="success-member-id" class="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-white">MBR-000000</div>
+            <p id="success-member-sub" class="text-xs text-slate-400 mt-2 font-medium">Nama • Telefon</p>
+
+            <div class="mt-4 flex items-center justify-center">
+              <button onclick="copySuccessId()" id="btn-copy-id" class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold text-xs rounded-xl border border-slate-700 min-h-[40px]">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span id="copy-btn-text">SALIN ID</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- WhatsApp to Member -->
+          <div class="mb-5">
+            <a id="success-wa-member-btn" href="#" target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md min-h-[48px]">
+              <i data-lucide="message-square" class="w-5 h-5"></i>
+              <span>HANTAR WHATSAPP KEPADA AHLI</span>
+            </a>
+          </div>
+
+          <!-- Admin Notification Box -->
+          <div class="mb-6 p-4 rounded-2xl border text-left text-xs bg-slate-50 border-slate-200">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-700 uppercase">Notifikasi WhatsApp Admin:</span>
+              <span class="font-bold px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800">SEDIA DIHANTAR</span>
+            </div>
+            <p class="text-slate-600 mt-1.5 leading-relaxed">
+              Tekan butang di bawah untuk membuka aplikasi WhatsApp dan menghantar ringkasan pendaftaran ke nombor admin.
+            </p>
+            <div class="mt-3">
+              <a id="success-wa-admin-btn" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold rounded-lg text-xs min-h-[38px]">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Buka WhatsApp Admin</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5">
+            <button onclick="switchTab('register')" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl min-h-[44px]">
+              + DAFTAR AHLI BARU
+            </button>
+            <button onclick="switchTab('members')" class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl min-h-[44px]">
+              Lihat Senarai Ahli →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW E: LAPORAN & ANALISIS (REPORT VIEW)   -->
+      <!-- ========================================== -->
+      <div id="view-report" class="hidden p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">MODUL LAPORAN</span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1.5">Member Report & Analytics</h2>
+          <p class="text-xs text-slate-500">Jana analisis data keahlian dan muat turun laporan rasmi.</p>
+        </div>
+
+        <!-- Export Buttons Card -->
+        <div class="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-sm">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Muat Turun Laporan Penuh</h3>
+          <p class="text-xs text-slate-300 mt-1">Eksport rekod ahli terus ke fail Microsoft Excel (.xlsx), CSV, atau cetakan PDF.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            <button onclick="exportToExcelDirect()" class="flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm rounded-xl min-h-[46px]">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>📥 EXPORT EXCEL (.xlsx)</span>
+            </button>
+            <button onclick="exportToCSVDirect()" class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm rounded-xl border border-slate-700 min-h-[46px]">
+              <i data-lucide="file-text" class="w-4 h-4 text-sky-400"></i>
+              <span>📄 EXPORT CSV (.csv)</span>
+            </button>
+            <button onclick="window.print()" class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm rounded-xl border border-slate-700 min-h-[46px]">
+              <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i>
+              <span>🖨 CETAK / PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Report Data Preview Table -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Pra-tonton Laporan Keahlian</h3>
+            <span id="report-preview-count" class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">0 Rekod</span>
+          </div>
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b text-slate-500 font-semibold uppercase text-[10px]">
+                <tr>
+                  <th class="py-2.5 px-3">No</th>
+                  <th class="py-2.5 px-3">ID</th>
+                  <th class="py-2.5 px-3">Nama Penuh</th>
+                  <th class="py-2.5 px-3">Telefon</th>
+                  <th class="py-2.5 px-3">Sponsor</th>
+                  <th class="py-2.5 px-3">Tarikh</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="report-preview-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW F: WHATSAPP GATEWAY & LOGS            -->
+      <!-- ========================================== -->
+      <div id="view-whatsapp" class="hidden p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900">WhatsApp Gateway & Logs</h2>
+            <p class="text-xs text-slate-500">Sejarah penghantaran mesej notifikasi ke admin dan ahli.</p>
+          </div>
+          <button onclick="loadWhatsAppLogs()" class="p-2 border rounded-xl bg-white hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div id="wa-logs-list" class="divide-y divide-slate-100">
+            <p class="text-xs text-slate-400 text-center py-6">Memuatkan log...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW G: AUDIT TRAIL LOGS                   -->
+      <!-- ========================================== -->
+      <div id="view-logs" class="hidden p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-5">
+        <div>
+          <h2 class="text-xl font-extrabold text-slate-900">Audit & Activity Log</h2>
+          <p class="text-xs text-slate-500">Jejak rekod pendaftaran, kemas kini, pemadaman, dan eksport data.</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div id="activity-logs-list" class="divide-y divide-slate-100">
+            <p class="text-xs text-slate-400 text-center py-6">Memuatkan log aktiviti...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- VIEW H: TETAPAN SISTEM (SETTINGS)          -->
+      <!-- ========================================== -->
+      <div id="view-settings" class="hidden p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5">
+        <div>
+          <h2 class="text-xl font-extrabold text-slate-900">Tetapan Sistem</h2>
+          <p class="text-xs text-slate-500">Format janaan Member ID, WhatsApp Admin & pengurusan data.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Prefix Member ID</label>
+              <input id="set-prefix" type="text" value="MBR-" class="w-full h-11 px-3 bg-slate-50 border rounded-xl text-sm font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Digit Angka</label>
+              <input id="set-digits" type="number" min="4" max="10" value="6" class="w-full h-11 px-3 bg-slate-50 border rounded-xl text-sm" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nombor WhatsApp Admin</label>
+              <input id="set-admin-phone" type="text" value="601120798015" class="w-full h-11 px-3 bg-slate-50 border rounded-xl text-sm font-mono" />
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button onclick="handleSaveSettings()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">
+              Simpan Tetapan
+            </button>
+          </div>
+        </div>
+
+        <!-- Demo Data & Clear Tools -->
+        <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-3">
+          <h3 class="font-bold text-slate-900 text-sm">Data Demo & Ujian</h3>
+          <p class="text-xs text-slate-500">Muat rekod contoh atau bersihkan pangkalan data Google Sheet.</p>
+          <div class="flex flex-wrap gap-2.5 pt-1">
+            <button onclick="handleSeedDemo()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl">
+              + Muat 6 Rekod Demo
+            </button>
+            <button onclick="handleClearDataPrompt()" class="px-4 py-2.5 text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-semibold rounded-xl">
+              Kosongkan Pangkalan Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 3. MOBILE BOTTOM NAVIGATION (<768px)                    -->
+  <!-- ======================================================= -->
+  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg safe-bottom">
+    <div class="grid grid-cols-5 h-16 max-w-md mx-auto">
+      <button onclick="switchTab('dashboard')" id="bnav-dashboard" class="flex flex-col items-center justify-center text-emerald-600">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold mt-1">Utama</span>
+      </button>
+      <button onclick="switchTab('members')" id="bnav-members" class="flex flex-col items-center justify-center text-slate-400">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold mt-1">Ahli</span>
+      </button>
+      <button onclick="switchTab('register')" id="bnav-register" class="flex flex-col items-center justify-center text-slate-400">
+        <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md -mt-4">
+          <i data-lucide="plus" class="w-5 h-5 stroke-[2.5]"></i>
+        </div>
+        <span class="text-[10px] font-bold mt-0.5">Daftar</span>
+      </button>
+      <button onclick="switchTab('report')" id="bnav-report" class="flex flex-col items-center justify-center text-slate-400">
+        <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold mt-1">Laporan</span>
+      </button>
+      <button onclick="toggleMobileMoreMenu()" id="bnav-more" class="flex flex-col items-center justify-center text-slate-400">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold mt-1">Lain-lain</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile "More" Drawer -->
+  <div id="mobile-more-drawer" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex flex-col justify-end">
+    <div class="bg-white rounded-t-3xl p-5 max-w-md w-full mx-auto space-y-3 animate-in slide-in-from-bottom safe-bottom">
+      <div class="flex items-center justify-between pb-2 border-b">
+        <h3 class="font-bold text-sm text-slate-900">Menu Tambahan</h3>
+        <button onclick="toggleMobileMoreMenu(false)" class="p-1 text-slate-400">✕</button>
+      </div>
+      <button onclick="switchTab('whatsapp'); toggleMobileMoreMenu(false);" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-left text-xs font-semibold text-slate-800">
+        <i data-lucide="message-square" class="w-4 h-4 text-emerald-600"></i>
+        <span>WhatsApp Gateway & Logs</span>
+      </button>
+      <button onclick="switchTab('logs'); toggleMobileMoreMenu(false);" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-left text-xs font-semibold text-slate-800">
+        <i data-lucide="history" class="w-4 h-4 text-sky-600"></i>
+        <span>Audit Trail & Activity Log</span>
+      </button>
+      <button onclick="switchTab('settings'); toggleMobileMoreMenu(false);" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-left text-xs font-semibold text-slate-800">
+        <i data-lucide="settings" class="w-4 h-4 text-slate-600"></i>
+        <span>Tetapan Sistem</span>
+      </button>
+      <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-rose-50 text-rose-700 font-bold text-xs rounded-xl">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Log Keluar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 4. MODALS (DETAIL, EDIT, FILTER)                        -->
+  <!-- ======================================================= -->
+
+  <!-- Modal Detail Ahli -->
+  <div id="modal-detail" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">MAKLUMAT KEAHLIAN</span>
+          <h3 id="modal-detail-id" class="text-xl font-extrabold text-slate-900 mt-1 font-mono">MBR-000000</h3>
+        </div>
+        <button onclick="closeDetailModal()" class="p-2 text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+      <div id="modal-detail-content" class="space-y-3 text-xs"></div>
+      <div class="pt-3 border-t border-slate-100 flex items-center gap-2 justify-between">
+        <div class="flex items-center gap-2">
+          <button id="btn-detail-edit" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold">Kemaskini</button>
+          <button id="btn-detail-delete" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-semibold">Padam</button>
+        </div>
+        <button onclick="closeDetailModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Ahli -->
+  <div id="modal-edit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">KEMASKINI AHLI</span>
+          <h3 id="modal-edit-id" class="text-xl font-extrabold text-slate-900 mt-1 font-mono">MBR-000000</h3>
+        </div>
+        <button onclick="closeEditModal()" class="p-2 text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+      <form id="form-edit-member" onsubmit="handleEditSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="edit-member-internal-id" />
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Nama Penuh</label>
+          <input id="edit-nama" type="text" required class="w-full h-10 px-3 bg-slate-50 border rounded-xl" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">No Telefon</label>
+            <input id="edit-telefon" type="text" required class="w-full h-10 px-3 bg-slate-50 border rounded-xl" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">NRIC (12 digit)</label>
+            <input id="edit-nric" type="text" required class="w-full h-10 px-3 bg-slate-50 border rounded-xl font-mono" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Sponsor ID</label>
+            <input id="edit-sponsor" type="text" class="w-full h-10 px-3 bg-slate-50 border rounded-xl uppercase font-mono" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Status Keahlian</label>
+            <select id="edit-status" class="w-full h-10 px-3 bg-slate-50 border rounded-xl">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Alamat Penuh</label>
+          <textarea id="edit-alamat" rows="2" required class="w-full p-2.5 bg-slate-50 border rounded-xl"></textarea>
+        </div>
+        <div class="pt-2 flex gap-2 justify-end">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-100 rounded-xl text-slate-700 font-semibold">Batal</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold">Simpan Kemaskini</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Penapis (Filter Drawer) -->
+  <div id="modal-filter" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl safe-bottom">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-900 text-sm">Penapis Senarai Ahli</h3>
+        <button onclick="toggleFilterModal(false)" class="p-1 text-slate-400">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Status</label>
+          <select id="filter-status" class="w-full h-10 px-3 bg-slate-50 border rounded-xl">
+            <option value="ALL">Semua (Aktif & Inactive)</option>
+            <option value="ACTIVE">ACTIVE Sahaja</option>
+            <option value="INACTIVE">INACTIVE Sahaja</option>
+            <option value="DELETED">DELETED (Telah Dipadam)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Sponsor</label>
+          <select id="filter-sponsor" class="w-full h-10 px-3 bg-slate-50 border rounded-xl">
+            <option value="ALL">Semua Sponsor</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Julat Tarikh</label>
+          <select id="filter-date-preset" class="w-full h-10 px-3 bg-slate-50 border rounded-xl">
+            <option value="ALL">Semua Tarikh</option>
+            <option value="TODAY">Hari Ini</option>
+            <option value="WEEK">Minggu Ini</option>
+            <option value="MONTH">Bulan Ini</option>
+            <option value="YEAR">Tahun Ini</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button onclick="applyFilters()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl min-h-[44px]">
+          Gunakan Filter
+        </button>
+        <button onclick="resetFilters(); toggleFilterModal(false);" class="px-4 py-3 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl min-h-[44px]">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 5. JAVASCRIPT APP CONTROLLER                            -->
+  <!-- ======================================================= -->
+  <script>
+    // State App
+    let currentUser = null;
+    let currentTab = 'dashboard';
+    let currentFilters = {
+      search: '',
+      status: 'ALL',
+      sponsorId: 'ALL',
+      datePreset: 'ALL',
+      sortBy: 'tarikhDaftar',
+      sortOrder: 'desc',
+      page: 1,
+      limit: 25
+    };
+    let membersData = [];
+    let searchTimer = null;
+
+    // Helper: Google Apps Script RPC Wrapper (dengan fallback preview)
+    function callServer(functionName, ...args) {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler((err) => reject(new Error(err.message || err)))
+            [functionName](...args);
+        } else {
+          // Fallback sekiranya dibuka sebagai fail tempatan di luar persekitaran Google Apps Script
+          console.warn('Running outside Google Apps Script iframe. Using local preview fallback.');
+          setTimeout(() => {
+            if (functionName === 'loginAdmin') {
+              resolve({
+                success: true,
+                user: { id: 'usr_admin', username: 'admin', nama: 'Super Administrator', role: 'SUPER_ADMIN' }
+              });
+            } else if (functionName === 'getDashboardStats') {
+              resolve({
+                totalMembers: 6,
+                activeMembers: 6,
+                inactiveMembers: 0,
+                deletedMembers: 0,
+                newThisMonth: 6,
+                newThisWeek: 3,
+                activeSponsorsCount: 3,
+                monthlyTrend: [
+                  { month: 'APR', count: 1 },
+                  { month: 'MEI', count: 2 },
+                  { month: 'JUN', count: 1 },
+                  { month: 'JUL', count: 4 },
+                  { month: 'OGOS', count: 3 },
+                  { month: 'SEP', count: 6 }
+                ]
+              });
+            } else if (functionName === 'getMembers') {
+              resolve({
+                members: [
+                  { id: 'mbr_1', memberId: 'MBR-000001', nama: 'Ahmad bin Zulkifli', telefon: '012-3456789', nric: '880101015678', alamat: 'No 12, Jalan Melati, KL', sponsorId: 'SP-0001', tarikhDaftar: new Date().toISOString(), status: 'ACTIVE' },
+                  { id: 'mbr_2', memberId: 'MBR-000002', nama: 'Siti Nurhaliza binti Bakar', telefon: '013-9876543', nric: '920202021234', alamat: 'Lorong Dahlia, Penang', sponsorId: 'SP-0002', tarikhDaftar: new Date().toISOString(), status: 'ACTIVE' },
+                  { id: 'mbr_3', memberId: 'MBR-000003', nama: 'Mohd Faiz bin Ibrahim', telefon: '017-8899001', nric: '850505089012', alamat: 'Kampung Baru, Shah Alam', sponsorId: 'SP-0001', tarikhDaftar: new Date().toISOString(), status: 'ACTIVE' }
+                ],
+                pagination: { total: 3, page: 1, limit: 25, totalPages: 1 }
+              });
+            } else {
+              resolve({ success: true, settings: { memberPrefix: 'MBR-', memberDigits: 6, adminWhatsAppNumber: '601120798015' } });
+            }
+          }, 300);
+        }
+      });
+    }
+
+    // Inisialisasi Apabila Laman Dimuatkan
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      const stored = localStorage.getItem('mms_admin_session');
+      if (stored) {
+        try {
+          currentUser = JSON.parse(stored);
+          document.getElementById('login-modal-screen').classList.add('hidden');
+          document.getElementById('sidebar-admin-name').innerText = currentUser.nama;
+          refreshDashboard();
+          loadMembers();
+        } catch (e) {
+          showLoginModal();
+        }
+      } else {
+        showLoginModal();
+      }
+    });
+
+    // Login Modal Handler
+    function showLoginModal() {
+      document.getElementById('login-modal-screen').classList.remove('hidden');
+    }
+
+    function fillDemoCredentials() {
+      document.getElementById('login-username').value = 'admin';
+      document.getElementById('login-password').value = 'admin123';
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const user = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login-submit');
+      const txt = document.getElementById('btn-login-text');
+
+      try {
+        btn.disabled = true;
+        txt.innerText = 'MENGESAHKAN...';
+        const res = await callServer('loginAdmin', user, pass);
+        if (res.success && res.user) {
+          currentUser = res.user;
+          localStorage.setItem('mms_admin_session', JSON.stringify(res.user));
+          document.getElementById('login-modal-screen').classList.add('hidden');
+          document.getElementById('sidebar-admin-name').innerText = currentUser.nama;
+          showToast('Selamat datang, ' + currentUser.nama + '!');
+          refreshDashboard();
+          loadMembers();
+        }
+      } catch (err) {
+        showToast(err.message || 'Kata laluan salah.', 'error');
+      } finally {
+        btn.disabled = false;
+        txt.innerText = 'LOG MASUK PORTAL';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Log keluar dari portal pentadbir?')) {
+        currentUser = null;
+        localStorage.removeItem('mms_admin_session');
+        location.reload();
+      }
+    }
+
+    // Toast Alert Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const isSuccess = type === 'success';
+      toast.className = `p-3.5 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2 border pointer-events-auto transition-all transform translate-y-0 ${
+        isSuccess ? 'bg-emerald-900 text-white border-emerald-700' : 'bg-rose-900 text-white border-rose-700'
+      }`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${isSuccess ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+        <span class="flex-1">${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Switch View Tab
+    function switchTab(tab) {
+      currentTab = tab;
+      const views = ['dashboard', 'members', 'register', 'success', 'report', 'whatsapp', 'logs', 'settings'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if (el) el.classList.add('hidden');
+
+        // Sidebar active styles
+        const sbtn = document.getElementById('nav-btn-' + v);
+        if (sbtn) {
+          if (v === tab) {
+            sbtn.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800/90 transition-all";
+          } else {
+            sbtn.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all";
+          }
+        }
+
+        // Bottom nav active styles
+        const bbtn = document.getElementById('bnav-' + v);
+        if (bbtn) {
+          bbtn.className = (v === tab)
+            ? 'flex flex-col items-center justify-center text-emerald-600'
+            : 'flex flex-col items-center justify-center text-slate-400';
+        }
+      });
+
+      const activeView = document.getElementById('view-' + tab);
+      if (activeView) activeView.classList.remove('hidden');
+
+      // Update titles
+      const titles = {
+        dashboard: ['Dashboard Pentadbir', 'Sistem Pengurusan Keahlian'],
+        members: ['Senarai Ahli', 'Pangkalan Data Ahli Berdaftar'],
+        register: ['Daftar Ahli Baru', 'Borang Pendaftaran Rasmi'],
+        success: ['Pendaftaran Berjaya', 'Member ID Dijana'],
+        report: ['Laporan & Analisis', 'Eksport & Rumusan Keahlian'],
+        whatsapp: ['WhatsApp Gateway', 'Log & Notifikasi Penghantaran'],
+        logs: ['Audit Trail', 'Jejak Rekod Aktiviti Sistem'],
+        settings: ['Tetapan Sistem', 'Konfigurasi Pangkalan Data & Format ID']
+      };
+      if (titles[tab]) {
+        document.getElementById('page-title').innerText = titles[tab][0];
+        document.getElementById('page-subtitle').innerText = titles[tab][1];
+      }
+
+      if (tab === 'dashboard') refreshDashboard();
+      if (tab === 'members') loadMembers();
+      if (tab === 'report') loadReportPreview();
+      if (tab === 'whatsapp') loadWhatsAppLogs();
+      if (tab === 'logs') loadActivityLogs();
+
+      lucide.createIcons();
+    }
+
+    // Refresh Dashboard Stats & Trend Visualizer
+    async function refreshDashboard() {
+      try {
+        const stats = await callServer('getDashboardStats');
+        document.getElementById('stat-total').innerText = stats.totalMembers || 0;
+        document.getElementById('stat-active').innerText = stats.activeMembers || 0;
+        document.getElementById('stat-month').innerText = stats.newThisMonth || 0;
+        document.getElementById('stat-sponsors').innerText = stats.activeSponsorsCount || 0;
+        document.getElementById('badge-total-members').innerText = stats.totalMembers || 0;
+
+        // Render Monthly Trend Bars
+        const trendContainer = document.getElementById('dashboard-trend-bars');
+        if (stats.monthlyTrend && stats.monthlyTrend.length > 0) {
+          const maxCount = Math.max(...stats.monthlyTrend.map(t => t.count), 1);
+          trendContainer.innerHTML = stats.monthlyTrend.map(t => {
+            const heightPercent = Math.max(12, Math.round((t.count / maxCount) * 100));
+            return `
+              <div class="flex flex-col items-center justify-end h-full group">
+                <span class="text-[10px] font-bold text-slate-700 mb-1 opacity-80 group-hover:opacity-100">${t.count}</span>
+                <div class="w-full max-w-[32px] bg-emerald-500 hover:bg-emerald-600 rounded-t-lg transition-all" style="height: ${heightPercent}%;"></div>
+                <span class="text-[10px] text-slate-400 mt-1 font-semibold">${t.month}</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Load 5 recent members
+        const res = await callServer('getMembers', { page: 1, limit: 5 });
+        const list = document.getElementById('dashboard-recent-members');
+        if (!res.members || res.members.length === 0) {
+          list.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center">Belum ada pendaftaran ahli.</p>';
+        } else {
+          list.innerHTML = res.members.map(m => `
+            <div onclick="openMemberDetail('${m.id}')" class="py-3 flex items-center justify-between gap-3 text-xs cursor-pointer hover:bg-slate-50 -mx-2 px-2 rounded-xl transition-colors">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-slate-900">${m.memberId}</span>
+                  <span class="font-semibold text-slate-800 truncate">${m.nama}</span>
+                </div>
+                <div class="text-slate-400 text-[11px] mt-0.5">${m.telefon} • Sponsor: ${m.sponsorId || '-'}</div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${m.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${m.status}</span>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Load Members List
+    async function loadMembers() {
+      try {
+        const res = await callServer('getMembers', currentFilters);
+        membersData = res.members || [];
+        const total = res.pagination ? res.pagination.total : membersData.length;
+        document.getElementById('badge-member-count').innerText = `${total} Rekod`;
+
+        // Populate unique sponsors dropdown in filter modal
+        populateSponsorsFilter(membersData);
+
+        renderMembersUI(membersData);
+        updatePaginationUI(res.pagination);
+      } catch (e) {
+        showToast('Ralat memuatkan ahli: ' + e.message, 'error');
+      }
+    }
+
+    function populateSponsorsFilter(members) {
+      const select = document.getElementById('filter-sponsor');
+      const uniqueSponsors = new Set();
+      members.forEach(m => {
+        if (m.sponsorId && m.sponsorId.trim() !== '') {
+          uniqueSponsors.add(m.sponsorId.trim().toUpperCase());
+        }
+      });
+      select.innerHTML = '<option value="ALL">Semua Sponsor</option>' +
+        Array.from(uniqueSponsors).map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    // Render Member UI (Mobile Cards + Desktop Table)
+    function renderMembersUI(members) {
+      const cardsCont = document.getElementById('mobile-cards-container');
+      const tableBody = document.getElementById('desktop-table-body');
+      const emptyCont = document.getElementById('members-empty-state');
+
+      if (members.length === 0) {
+        cardsCont.innerHTML = '';
+        tableBody.innerHTML = '';
+        emptyCont.classList.remove('hidden');
+        return;
+      }
+      emptyCont.classList.add('hidden');
+
+      // 1. Mobile Cards
+      cardsCont.innerHTML = members.map(m => {
+        const cleanWa = m.telefon.replace(/\D/g, '');
+        const memberWa = '60' + (cleanWa.startsWith('60') ? cleanWa.slice(2) : cleanWa.replace(/^0/, ''));
+        const waUrl = `https://wa.me/${memberWa}?text=${encodeURIComponent('Assalamualaikum ' + m.nama + ',\n\nMember ID anda: ' + m.memberId)}`;
+        return `
+          <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="font-mono text-sm font-bold text-slate-900">${m.memberId}</span>
+                <h4 class="font-extrabold text-slate-900 text-sm mt-0.5">${m.nama}</h4>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${m.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'}">${m.status}</span>
+            </div>
+            <div class="text-xs text-slate-500 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <div>📱 Telefon: <strong class="text-slate-700">${m.telefon}</strong></div>
+              <div>🆔 NRIC: ******-${m.nric.slice(-4)}</div>
+              <div>🤝 Sponsor: <strong class="text-slate-700">${m.sponsorId || '-'}</strong></div>
+            </div>
+            <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+              <a href="${waUrl}" target="_blank" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border border-emerald-200 min-h-[40px]">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                <span>WA</span>
+              </a>
+              <button onclick="openMemberDetail('${m.id}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1 min-h-[40px]">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Detail</span>
+              </button>
+              <button onclick="openMemberEdit('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl flex items-center justify-center min-h-[40px]">
+                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Desktop Table Body
+      tableBody.innerHTML = members.map(m => `
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-3 px-4 font-mono font-bold text-slate-900">${m.memberId}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${m.nama}</td>
+          <td class="py-3 px-4 text-slate-600">${m.telefon}</td>
+          <td class="py-3 px-4 font-mono text-slate-500">******-${m.nric.slice(-4)}</td>
+          <td class="py-3 px-4 font-medium text-slate-600">${m.sponsorId || '-'}</td>
+          <td class="py-3 px-4 text-slate-400 text-xs">${m.tarikhDaftar ? m.tarikhDaftar.slice(0, 10) : '-'}</td>
+          <td class="py-3 px-4 text-center">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${m.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'}">${m.status}</span>
+          </td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="openMemberDetail('${m.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Detail</button>
+            <button onclick="openMemberEdit('${m.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Edit</button>
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    // Search Debounce Handler
+    function handleSearchDebounced() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        currentFilters.search = document.getElementById('input-search').value;
+        currentFilters.page = 1;
+        loadMembers();
+      }, 350);
+    }
+
+    // Filter Modal Controls
+    function toggleFilterModal(show) {
+      const el = document.getElementById('modal-filter');
+      if (show) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
+
+    function applyFilters() {
+      currentFilters.status = document.getElementById('filter-status').value;
+      currentFilters.sponsorId = document.getElementById('filter-sponsor').value;
+      currentFilters.datePreset = document.getElementById('filter-date-preset').value;
+      currentFilters.page = 1;
+      toggleFilterModal(false);
+      loadMembers();
+      updateFilterChips();
+    }
+
+    function resetFilters() {
+      currentFilters = {
+        search: '',
+        status: 'ALL',
+        sponsorId: 'ALL',
+        datePreset: 'ALL',
+        sortBy: 'tarikhDaftar',
+        sortOrder: 'desc',
+        page: 1,
+        limit: 25
+      };
+      document.getElementById('input-search').value = '';
+      document.getElementById('filter-status').value = 'ALL';
+      document.getElementById('filter-sponsor').value = 'ALL';
+      document.getElementById('filter-date-preset').value = 'ALL';
+      loadMembers();
+      updateFilterChips();
+    }
+
+    function updateFilterChips() {
+      const container = document.getElementById('active-filter-chips');
+      const chips = document.getElementById('chips-container');
+      const active = [];
+
+      if (currentFilters.status !== 'ALL') active.push(`Status: ${currentFilters.status}`);
+      if (currentFilters.sponsorId !== 'ALL') active.push(`Sponsor: ${currentFilters.sponsorId}`);
+      if (currentFilters.datePreset !== 'ALL') active.push(`Tarikh: ${currentFilters.datePreset}`);
+      if (currentFilters.search) active.push(`Carian: "${currentFilters.search}"`);
+
+      if (active.length > 0) {
+        container.classList.remove('hidden');
+        chips.innerHTML = active.map(txt => `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-medium text-[11px]">${txt}</span>`).join('');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    // Pagination
+    function updatePaginationUI(p) {
+      if (!p) return;
+      document.getElementById('pagination-info').innerText = `Halaman ${p.page} daripada ${p.totalPages || 1}`;
+      document.getElementById('btn-page-prev').disabled = (p.page <= 1);
+      document.getElementById('btn-page-next').disabled = (p.page >= p.totalPages);
+    }
+
+    function changePage(delta) {
+      currentFilters.page += delta;
+      loadMembers();
+    }
+
+    // Member Registration Submit Handler
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-reg');
+      const txt = document.getElementById('btn-reg-text');
+
+      const formData = {
+        nama: document.getElementById('reg-nama').value,
+        telefon: document.getElementById('reg-telefon').value,
+        nric: document.getElementById('reg-nric').value,
+        email: document.getElementById('reg-email').value,
+        sponsorId: document.getElementById('reg-sponsor').value,
+        alamat: document.getElementById('reg-alamat').value
+      };
+
+      try {
+        btn.disabled = true;
+        txt.innerText = 'MENDAFTAR KE GOOGLE SHEETS...';
+
+        const result = await callServer('createMember', formData);
+
+        // Reset form
+        document.getElementById('form-register').reset();
+
+        // Populate Success Screen
+        document.getElementById('success-member-id').innerText = result.member.memberId;
+        document.getElementById('success-member-sub').innerText = `${result.member.nama} • ${result.member.telefon}`;
+
+        // WhatsApp to Member Link
+        const cleanPhone = result.member.telefon.replace(/\D/g, '');
+        const memberWaNumber = '60' + (cleanPhone.startsWith('60') ? cleanPhone.slice(2) : cleanPhone.replace(/^0/, ''));
+        const memberWaMsg = `Assalamualaikum ${result.member.nama}.\n\nTerima kasih kerana telah mendaftar sebagai ahli.\n\nMember ID anda:\n${result.member.memberId}\n\nTerima kasih.`;
+        document.getElementById('success-wa-member-btn').href = `https://wa.me/${memberWaNumber}?text=${encodeURIComponent(memberWaMsg)}`;
+
+        // WhatsApp to Admin Link
+        document.getElementById('success-wa-admin-btn').href = result.whatsappNotification.waDirectUrl;
+
+        showToast('Pendaftaran berjaya! Member ID: ' + result.member.memberId);
+        switchTab('success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        txt.innerText = '✓ DAFTAR AHLI';
+      }
+    }
+
+    // Copy Success ID
+    function copySuccessId() {
+      const id = document.getElementById('success-member-id').innerText;
+      navigator.clipboard.writeText(id);
+      document.getElementById('copy-btn-text').innerText = 'ID DISALIN!';
+      setTimeout(() => {
+        document.getElementById('copy-btn-text').innerText = 'SALIN ID';
+      }, 2000);
+    }
+
+    // Member Detail & Edit Modals
+    function openMemberDetail(id) {
+      const m = membersData.find(x => x.id === id);
+      if (!m) return;
+      document.getElementById('modal-detail-id').innerText = m.memberId;
+      document.getElementById('modal-detail-content').innerHTML = `
+        <div class="p-4 bg-slate-50 rounded-2xl space-y-2 border border-slate-100">
+          <div><span class="text-slate-400 font-semibold block text-[10px] uppercase">Nama Penuh</span><strong class="text-slate-800 text-sm">${m.nama}</strong></div>
+          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+            <div><span class="text-slate-400 font-semibold block text-[10px] uppercase">No Telefon</span><strong class="text-slate-800">${m.telefon}</strong></div>
+            <div><span class="text-slate-400 font-semibold block text-[10px] uppercase">NRIC</span><strong class="text-slate-800 font-mono">${m.nric}</strong></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+            <div><span class="text-slate-400 font-semibold block text-[10px] uppercase">Sponsor ID</span><strong class="text-slate-800">${m.sponsorId || '-'}</strong></div>
+            <div><span class="text-slate-400 font-semibold block text-[10px] uppercase">Status</span><span class="font-bold text-emerald-700">${m.status}</span></div>
+          </div>
+          <div class="pt-1 border-t border-slate-200/60"><span class="text-slate-400 font-semibold block text-[10px] uppercase">Alamat</span><span class="text-slate-700">${m.alamat}</span></div>
+        </div>
+      `;
+      document.getElementById('btn-detail-edit').onclick = () => { closeDetailModal(); openMemberEdit(id); };
+      document.getElementById('btn-detail-delete').onclick = () => { handleDeleteMember(id, m.nama); };
+      document.getElementById('modal-detail').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('modal-detail').classList.add('hidden');
+    }
+
+    function openMemberEdit(id) {
+      const m = membersData.find(x => x.id === id);
+      if (!m) return;
+      document.getElementById('edit-member-internal-id').value = m.id;
+      document.getElementById('modal-edit-id').innerText = m.memberId;
+      document.getElementById('edit-nama').value = m.nama;
+      document.getElementById('edit-telefon').value = m.telefon;
+      document.getElementById('edit-nric').value = m.nric;
+      document.getElementById('edit-sponsor').value = m.sponsorId || '';
+      document.getElementById('edit-status').value = m.status;
+      document.getElementById('edit-alamat').value = m.alamat;
+      document.getElementById('modal-edit').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('modal-edit').classList.add('hidden');
+    }
+
+    async function handleEditSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-member-internal-id').value;
+      const updatedData = {
+        nama: document.getElementById('edit-nama').value,
+        telefon: document.getElementById('edit-telefon').value,
+        nric: document.getElementById('edit-nric').value,
+        sponsorId: document.getElementById('edit-sponsor').value,
+        status: document.getElementById('edit-status').value,
+        alamat: document.getElementById('edit-alamat').value
+      };
+
+      try {
+        await callServer('updateMember', id, updatedData);
+        showToast('Maklumat ahli berjaya dikemaskini!');
+        closeEditModal();
+        loadMembers();
+        refreshDashboard();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function handleDeleteMember(id, nama) {
+      if (confirm(`Adakah anda pasti mahu memadam ahli: ${nama}?`)) {
+        try {
+          await callServer('deleteMember', id);
+          showToast('Ahli telah dipadam (Soft Delete).');
+          closeDetailModal();
+          loadMembers();
+          refreshDashboard();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      }
+    }
+
+    // Direct Export to Excel (.xlsx) using SheetJS
+    async function exportToExcelDirect() {
+      try {
+        showToast('Menjana fail Excel (.xlsx)...');
+        const res = await callServer('getAllFilteredMembersForExport', currentFilters);
+        const data = res.members.map((m, idx) => ({
+          'No': idx + 1,
+          'Member ID': m.memberId,
+          'Nama Penuh': m.nama,
+          'No Telefon': m.telefon,
+          'NRIC': m.nric,
+          'Email': m.email || '',
+          'Alamat': m.alamat,
+          'ID Sponsor': m.sponsorId || '',
+          'Tarikh Daftar': m.tarikhDaftar,
+          'Status': m.status
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Senarai Ahli');
+        XLSX.writeFile(wb, `Member_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        showToast('Laporan Excel berjaya dimuat turun!');
+      } catch (e) {
+        showToast('Gagal mengeksport: ' + e.message, 'error');
+      }
+    }
+
+    // Direct Export to CSV
+    async function exportToCSVDirect() {
+      try {
+        const res = await callServer('getAllFilteredMembersForExport', currentFilters);
+        let csv = '\uFEFFNo,Member ID,Nama Penuh,No Telefon,NRIC,Email,Alamat,Sponsor,Tarikh Daftar,Status\n';
+        res.members.forEach((m, idx) => {
+          csv += `"${idx + 1}","${m.memberId}","${m.nama}","${m.telefon}","'${m.nric}","${m.email || ''}","${(m.alamat || '').replace(/"/g, '""')}","${m.sponsorId || ''}","${m.tarikhDaftar}","${m.status}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Member_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Fail CSV berjaya dimuat turun!');
+      } catch (e) {
+        showToast('Gagal muat turun CSV: ' + e.message, 'error');
+      }
+    }
+
+    // Load Report Preview Table
+    async function loadReportPreview() {
+      try {
+        const res = await callServer('getAllFilteredMembersForExport', currentFilters);
+        const members = res.members || [];
+        document.getElementById('report-preview-count').innerText = `${members.length} Rekod`;
+        const body = document.getElementById('report-preview-body');
+        if (members.length === 0) {
+          body.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Tiada rekod laporan.</td></tr>';
+        } else {
+          body.innerHTML = members.slice(0, 15).map((m, idx) => `
+            <tr>
+              <td class="py-2.5 px-3 font-semibold text-slate-400">${idx + 1}</td>
+              <td class="py-2.5 px-3 font-mono font-bold text-slate-800">${m.memberId}</td>
+              <td class="py-2.5 px-3 font-semibold text-slate-800">${m.nama}</td>
+              <td class="py-2.5 px-3 text-slate-600">${m.telefon}</td>
+              <td class="py-2.5 px-3 text-slate-500">${m.sponsorId || '-'}</td>
+              <td class="py-2.5 px-3 text-slate-400">${m.tarikhDaftar ? m.tarikhDaftar.slice(0, 10) : '-'}</td>
+              <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${m.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${m.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Logs & Settings Handlers
+    async function loadWhatsAppLogs() {
+      const res = await callServer('getWhatsAppLogs');
+      const list = document.getElementById('wa-logs-list');
+      if (!res.logs || res.logs.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-400 py-6 text-center">Tiada rekod log WhatsApp.</p>';
+      } else {
+        list.innerHTML = res.logs.map(l => `
+          <div class="py-3 flex items-center justify-between text-xs">
+            <div>
+              <span class="font-mono font-bold">${l.memberId}</span> - <strong>${l.nama}</strong> (${l.recipient})
+              <div class="text-[11px] text-slate-400 mt-0.5">${l.sentAt ? l.sentAt.slice(0, 16).replace('T', ' ') : ''}</div>
+            </div>
+            <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-50 text-emerald-700">${l.status}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function loadActivityLogs() {
+      const res = await callServer('getActivityLogs');
+      const list = document.getElementById('activity-logs-list');
+      if (!res.logs || res.logs.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-400 py-6 text-center">Tiada rekod aktiviti.</p>';
+      } else {
+        list.innerHTML = res.logs.map(l => `
+          <div class="py-3 text-xs flex justify-between items-center">
+            <div>
+              <span class="font-bold text-slate-800">[${l.action}]</span> ${l.details}
+              <div class="text-[11px] text-slate-400 mt-0.5">Oleh: ${l.user} • ${l.timestamp ? l.timestamp.slice(0, 16).replace('T', ' ') : ''}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function handleSaveSettings() {
+      const newSettings = {
+        memberPrefix: document.getElementById('set-prefix').value,
+        memberDigits: document.getElementById('set-digits').value,
+        adminWhatsAppNumber: document.getElementById('set-admin-phone').value
+      };
+      await callServer('updateSettings', newSettings);
+      showToast('Tetapan berjaya disimpan!');
+    }
+
+    async function handleSeedDemo() {
+      showToast('Memuatkan rekod demo...');
+      await callServer('seedDemoData');
+      showToast('6 rekod demo berjaya dimuatkan!');
+      refreshDashboard();
+      loadMembers();
+    }
+
+    async function handleClearDataPrompt() {
+      if (confirm('Adakah anda pasti mahu mengosongkan semua data dalam Google Sheets?')) {
+        await callServer('clearAllData');
+        showToast('Data pangkalan data telah dikosongkan!');
+        refreshDashboard();
+        loadMembers();
+      }
+    }
+
+    function toggleMobileMoreMenu(show = true) {
+      const el = document.getElementById('mobile-more-drawer');
+      if (show) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
