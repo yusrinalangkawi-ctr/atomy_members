@@ -45,45 +45,26 @@ function initDatabase() {
   if (!ss) return;
 
   // 1. Tab Members
-  var membersSheet = ss.getSheetByName(SHEETS.MEMBERS);
-  if (!membersSheet) {
-    membersSheet = ss.insertSheet(SHEETS.MEMBERS);
-    membersSheet.appendRow([
-      'id', 'memberId', 'nama', 'telefon', 'nric',
-      'email', 'alamat', 'sponsorId', 'tarikhDaftar',
-      'status', 'updatedAt'
-    ]);
-    formatHeaderRow(membersSheet);
-  }
+  getOrCreateSheet(ss, SHEETS.MEMBERS, [
+    'id', 'memberId', 'nama', 'telefon', 'nric',
+    'email', 'alamat', 'sponsorId', 'tarikhDaftar',
+    'status', 'updatedAt'
+  ]);
 
   // 2. Tab WhatsAppLogs
-  var waSheet = ss.getSheetByName(SHEETS.WHATSAPP_LOGS);
-  if (!waSheet) {
-    waSheet = ss.insertSheet(SHEETS.WHATSAPP_LOGS);
-    waSheet.appendRow([
-      'id', 'memberId', 'nama', 'recipient', 'messageType',
-      'content', 'status', 'sentAt', 'error'
-    ]);
-    formatHeaderRow(waSheet);
-  }
+  getOrCreateSheet(ss, SHEETS.WHATSAPP_LOGS, [
+    'id', 'memberId', 'nama', 'recipient', 'messageType',
+    'content', 'status', 'sentAt', 'error'
+  ]);
 
   // 3. Tab ActivityLogs
-  var actSheet = ss.getSheetByName(SHEETS.ACTIVITY_LOGS);
-  if (!actSheet) {
-    actSheet = ss.insertSheet(SHEETS.ACTIVITY_LOGS);
-    actSheet.appendRow([
-      'id', 'action', 'details', 'user', 'timestamp', 'memberId'
-    ]);
-    formatHeaderRow(actSheet);
-  }
+  getOrCreateSheet(ss, SHEETS.ACTIVITY_LOGS, [
+    'id', 'action', 'details', 'user', 'timestamp', 'memberId'
+  ]);
 
   // 4. Tab Settings
-  var settingsSheet = ss.getSheetByName(SHEETS.SETTINGS);
-  if (!settingsSheet) {
-    settingsSheet = ss.insertSheet(SHEETS.SETTINGS);
-    settingsSheet.appendRow(['key', 'value']);
-    formatHeaderRow(settingsSheet);
-
+  var settingsSheet = getOrCreateSheet(ss, SHEETS.SETTINGS, ['key', 'value']);
+  if (settingsSheet && settingsSheet.getLastRow() <= 1) {
     var defaultSettings = [
       ['appName', 'Member Management System'],
       ['memberPrefix', 'MBR-'],
@@ -95,18 +76,86 @@ function initDatabase() {
       ['adminNotifyTemplate', '🔔 PENDAFTARAN AHLI BARU\n\nNama: {{Nama}}\nTelefon: {{Telefon}}\nNRIC: {{NRIC}}\nMember ID: {{MemberID}}\nSponsor: {{Sponsor}}\nTarikh: {{Tarikh}}']
     ];
 
-    defaultSettings.forEach(function(row) {
-      settingsSheet.appendRow(row);
-    });
+    try {
+      defaultSettings.forEach(function(row) {
+        settingsSheet.appendRow(row);
+      });
+    } catch (e) {}
   }
 }
 
+/**
+ * Mencari tab sheet secara toleran (case-insensitive & abaikan ruang kosong)
+ */
+function getSheet(sheetName, ss) {
+  if (!ss) {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  }
+  if (!ss) return null;
+
+  // 1. Semakan nama tepat
+  var sheet = ss.getSheetByName(sheetName);
+  if (sheet) return sheet;
+
+  // 2. Semakan bertoleransi (huruf kecil, tiada ruang)
+  var sheets = ss.getSheets();
+  var normalizedTarget = String(sheetName).toLowerCase().replace(/[\s_-]+/g, '');
+  for (var i = 0; i < sheets.length; i++) {
+    var s = sheets[i];
+    var normName = s.getName().toLowerCase().replace(/[\s_-]+/g, '');
+    if (normName === normalizedTarget) {
+      return s;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Dapatkan atau bina sheet secara selamat tanpa ralat duplicate name
+ */
+function getOrCreateSheet(ss, targetName, headers) {
+  var sheet = getSheet(targetName, ss);
+
+  if (!sheet) {
+    try {
+      sheet = ss.insertSheet(targetName);
+    } catch (err) {
+      // Jika telah wujud di peringkat Google Sheet (cth isu case atau ruang), cari semula
+      sheet = getSheet(targetName, ss);
+      if (!sheet) {
+        var all = ss.getSheets();
+        for (var k = 0; k < all.length; k++) {
+          if (all[k].getName().toLowerCase().trim() === String(targetName).toLowerCase().trim()) {
+            sheet = all[k];
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (sheet && headers && sheet.getLastRow() === 0) {
+    try {
+      sheet.appendRow(headers);
+      formatHeaderRow(sheet);
+    } catch (e) {}
+  }
+
+  return sheet;
+}
+
 function formatHeaderRow(sheet) {
-  var range = sheet.getRange(1, 1, 1, sheet.getLastColumn());
-  range.setFontWeight('bold');
-  range.setBackground('#10B981');
-  range.setFontColor('#FFFFFF');
-  sheet.setFrozenRows(1);
+  try {
+    var lastCol = sheet.getLastColumn();
+    if (lastCol > 0) {
+      var range = sheet.getRange(1, 1, 1, lastCol);
+      range.setFontWeight('bold');
+      range.setBackground('#10B981');
+      range.setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+  } catch (e) {}
 }
 
 /**
@@ -144,7 +193,7 @@ function createMember(formData) {
   try {
     initDatabase();
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(SHEETS.MEMBERS);
+    var sheet = getSheet(SHEETS.MEMBERS, ss);
     var settings = getSettingsObject();
 
     var nama = (formData.nama || '').trim();
@@ -295,7 +344,7 @@ function createMember(formData) {
 function getMembers(params) {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.MEMBERS);
+  var sheet = getSheet(SHEETS.MEMBERS, ss);
   var data = sheet.getDataRange().getValues();
 
   params = params || {};
@@ -413,7 +462,7 @@ function getAllFilteredMembersForExport(params) {
 function updateMember(id, updatedData) {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.MEMBERS);
+  var sheet = getSheet(SHEETS.MEMBERS, ss);
   var data = sheet.getDataRange().getValues();
 
   for (var i = 1; i < data.length; i++) {
@@ -478,7 +527,7 @@ function restoreMember(id) {
 function getDashboardStats() {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.MEMBERS);
+  var sheet = getSheet(SHEETS.MEMBERS, ss);
   var data = sheet.getDataRange().getValues();
 
   var total = 0;
@@ -570,7 +619,7 @@ function getSettings() {
 
 function getSettingsObject() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.SETTINGS);
+  var sheet = getSheet(SHEETS.SETTINGS, ss);
   var data = sheet.getDataRange().getValues();
   var settings = {};
   for (var i = 1; i < data.length; i++) {
@@ -584,7 +633,7 @@ function getSettingsObject() {
 function updateSettings(newSettings) {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.SETTINGS);
+  var sheet = getSheet(SHEETS.SETTINGS, ss);
   var data = sheet.getDataRange().getValues();
 
   for (var key in newSettings) {
@@ -611,7 +660,7 @@ function updateSettings(newSettings) {
 function getWhatsAppLogs() {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.WHATSAPP_LOGS);
+  var sheet = getSheet(SHEETS.WHATSAPP_LOGS, ss);
   var data = sheet.getDataRange().getValues();
   var logs = [];
 
@@ -637,7 +686,7 @@ function getWhatsAppLogs() {
 function retryWhatsApp(logId) {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.WHATSAPP_LOGS);
+  var sheet = getSheet(SHEETS.WHATSAPP_LOGS, ss);
   var data = sheet.getDataRange().getValues();
 
   for (var i = 1; i < data.length; i++) {
@@ -673,7 +722,7 @@ function retryWhatsApp(logId) {
 function getActivityLogs() {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.ACTIVITY_LOGS);
+  var sheet = getSheet(SHEETS.ACTIVITY_LOGS, ss);
   var data = sheet.getDataRange().getValues();
   var logs = [];
 
@@ -699,7 +748,7 @@ function getActivityLogs() {
 function seedDemoData() {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEETS.MEMBERS);
+  var sheet = getSheet(SHEETS.MEMBERS, ss);
 
   var demoRecords = [
     { nama: 'Ahmad bin Zulkifli', telefon: '012-3456789', nric: '880101-01-5678', alamat: 'No 12, Jalan Melati 3, 50000 Kuala Lumpur', sponsorId: 'SP-0001' },
@@ -725,17 +774,17 @@ function seedDemoData() {
 function clearAllData() {
   initDatabase();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var mSheet = ss.getSheetByName(SHEETS.MEMBERS);
-  var wSheet = ss.getSheetByName(SHEETS.WHATSAPP_LOGS);
-  var aSheet = ss.getSheetByName(SHEETS.ACTIVITY_LOGS);
+  var mSheet = getSheet(SHEETS.MEMBERS, ss);
+  var wSheet = getSheet(SHEETS.WHATSAPP_LOGS, ss);
+  var aSheet = getSheet(SHEETS.ACTIVITY_LOGS, ss);
 
-  if (mSheet.getLastRow() > 1) {
+  if (mSheet && mSheet.getLastRow() > 1) {
     mSheet.deleteRows(2, mSheet.getLastRow() - 1);
   }
-  if (wSheet.getLastRow() > 1) {
+  if (wSheet && wSheet.getLastRow() > 1) {
     wSheet.deleteRows(2, wSheet.getLastRow() - 1);
   }
-  if (aSheet.getLastRow() > 1) {
+  if (aSheet && aSheet.getLastRow() > 1) {
     aSheet.deleteRows(2, aSheet.getLastRow() - 1);
   }
 
@@ -757,7 +806,7 @@ function cleanNricDigits(nric) {
 function logActivity(action, details, user, memberId) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(SHEETS.ACTIVITY_LOGS);
+    var sheet = getSheet(SHEETS.ACTIVITY_LOGS, ss);
     if (!sheet) return;
 
     var logUuid = 'act_' + new Date().getTime() + '_' + Math.random().toString(36).substring(2, 6);
@@ -777,7 +826,7 @@ function logActivity(action, details, user, memberId) {
 function logWhatsAppMessage(memberId, nama, recipient, messageType, content, status) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(SHEETS.WHATSAPP_LOGS);
+    var sheet = getSheet(SHEETS.WHATSAPP_LOGS, ss);
     if (!sheet) return null;
 
     var logUuid = 'wlog_' + new Date().getTime() + '_' + Math.random().toString(36).substring(2, 6);

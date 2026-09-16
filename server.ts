@@ -337,6 +337,51 @@ app.get('/api/download/code.gs', (req, res) => {
   }
 });
 
+// Download Java, HTML, CSS Files
+app.get('/api/download/java/index.html', (req, res) => {
+  const filePath = path.join(process.cwd(), 'java_html_css', 'index.html');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="index.html"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Fail index.html tidak ditemui.');
+  }
+});
+
+app.get('/api/download/java/style.css', (req, res) => {
+  const filePath = path.join(process.cwd(), 'java_html_css', 'style.css');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="style.css"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Fail style.css tidak ditemui.');
+  }
+});
+
+app.get('/api/download/java/app.js', (req, res) => {
+  const filePath = path.join(process.cwd(), 'java_html_css', 'app.js');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="app.js"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Fail app.js tidak ditemui.');
+  }
+});
+
+app.get('/api/download/java/MemberServer.java', (req, res) => {
+  const filePath = path.join(process.cwd(), 'java_html_css', 'MemberServer.java');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'text/x-java-source; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="MemberServer.java"');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Fail MemberServer.java tidak ditemui.');
+  }
+});
+
 // Admin Authentication
 app.post('/api/auth/login', (req, res) => {
   const { password, username = 'admin' } = req.body;

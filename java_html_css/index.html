@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistem Pengurusan Keahlian</title>
+  
+  <!-- Fail Gaya CSS Tulen -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- SheetJS untuk eksport Excel terus -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ======================================================= -->
+  <!-- 1. SIDEBAR DESKTOP (>=768px)                            -->
+  <!-- ======================================================= -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon">🏛️</div>
+      <div>
+        <div class="brand-title">Member Portal</div>
+        <div class="brand-sub">HTML • CSS • JAVA</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="nav-link active">
+        <span>📊</span>
+        <span>Dashboard</span>
+      </button>
+      <button onclick="switchTab('members')" id="nav-btn-members" class="nav-link">
+        <span>👥</span>
+        <span>Senarai Ahli</span>
+        <span id="badge-total-members" class="nav-badge">0</span>
+      </button>
+      <button onclick="switchTab('register')" id="nav-btn-register" class="nav-link">
+        <span>➕</span>
+        <span>Daftar Ahli Baru</span>
+      </button>
+      <button onclick="switchTab('report')" id="nav-btn-report" class="nav-link">
+        <span>📑</span>
+        <span>Laporan & Analisis</span>
+      </button>
+      <button onclick="switchTab('whatsapp')" id="nav-btn-whatsapp" class="nav-link">
+        <span>💬</span>
+        <span>WhatsApp Gateway</span>
+      </button>
+      <button onclick="switchTab('logs')" id="nav-btn-logs" class="nav-link">
+        <span>📜</span>
+        <span>Audit Trail</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-btn-settings" class="nav-link">
+        <span>⚙️</span>
+        <span>Tetapan Sistem</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-profile">
+        <div class="admin-avatar">AD</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700;">Administrator</div>
+          <div style="font-size: 10px; color: var(--primary-400);">Java Backend Ready</div>
+        </div>
+      </div>
+      <button onclick="handleLogout()" title="Log Keluar" style="background:none; border:none; color: var(--slate-400); cursor:pointer; font-size:16px;">
+        🚪
+      </button>
+    </div>
+  </aside>
+
+  <!-- ======================================================= -->
+  <!-- 2. KAWASAN KANDUNGAN UTAMA                              -->
+  <!-- ======================================================= -->
+  <div id="main-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div>
+        <h1 id="header-title" class="header-title">Dashboard Pentadbir</h1>
+        <p id="header-subtitle" class="header-subtitle">Sistem Pengurusan Keahlian</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="status-pill">
+          <span class="pulse-dot"></span>
+          <span>Sistem Aktif</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Toast Alert Container -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;"></div>
+
+    <!-- MAIN VIEWS -->
+    <main>
+
+      <!-- ========================================== -->
+      <!-- VIEW A: DASHBOARD VIEW                     -->
+      <!-- ========================================== -->
+      <section id="view-dashboard" class="view-container">
+        <!-- 4 Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">JUMLAH AHLI</div>
+            <div id="stat-total" class="stat-value">0</div>
+            <div style="font-size: 11px; color: var(--slate-400); margin-top: 4px;">Semua rekod berdaftar</div>
+          </div>
+          <div class="stat-card emerald">
+            <div class="stat-label">AHLI AKTIF</div>
+            <div id="stat-active" class="stat-value">0</div>
+            <div style="font-size: 11px; color: var(--slate-400); margin-top: 4px;">Status keahlian aktif</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">BARU BULAN INI</div>
+            <div id="stat-month" class="stat-value">0</div>
+            <div style="font-size: 11px; color: var(--slate-400); margin-top: 4px;">Pendaftaran terkini</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">SPONSOR AKTIF</div>
+            <div id="stat-sponsors" class="stat-value">0</div>
+            <div style="font-size: 11px; color: var(--slate-400); margin-top: 4px;">Rangkaian sponsor unik</div>
+          </div>
+        </div>
+
+        <!-- 3 Action Buttons -->
+        <div class="quick-actions">
+          <button onclick="switchTab('register')" class="action-btn primary">
+            <div>
+              <span class="action-title">+ Daftar Ahli Baru</span>
+              <span class="action-desc">Borang pendaftaran rasmi</span>
+            </div>
+            <span style="font-size: 18px;">➔</span>
+          </button>
+          <button onclick="switchTab('members')" class="action-btn">
+            <div>
+              <span class="action-title">👥 Senarai Ahli</span>
+              <span class="action-desc">Carian & maklumat lengkap</span>
+            </div>
+            <span style="font-size: 18px; color: var(--slate-400);">➔</span>
+          </button>
+          <button onclick="switchTab('report')" class="action-btn">
+            <div>
+              <span class="action-title">📊 Laporan & Analisis</span>
+              <span class="action-desc">Eksport Excel, CSV & Print</span>
+            </div>
+            <span style="font-size: 18px; color: var(--slate-400);">➔</span>
+          </button>
+        </div>
+
+        <!-- Monthly Growth Trend -->
+        <div class="card">
+          <h3 style="font-size: 15px; font-weight: 700; color: var(--slate-900);">Trend Pertumbuhan Keahlian</h3>
+          <p style="font-size: 12px; color: var(--slate-500); margin-bottom: 16px;">Taburan pendaftaran ahli bagi 6 bulan terkini.</p>
+          <div id="dashboard-trend-bars" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; height: 120px; align-items: flex-end;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Recent Registrations -->
+        <div class="card">
+          <div class="flex justify-between items-center" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--slate-100);">
+            <h3 style="font-size: 15px; font-weight: 700; color: var(--slate-900);">Pendaftaran Terkini</h3>
+            <button onclick="switchTab('members')" class="btn btn-secondary btn-sm">Lihat Semua →</button>
+          </div>
+          <div id="dashboard-recent-members">
+            <p style="font-size: 12px; color: var(--slate-400); text-align: center; padding: 16px;">Memuatkan rekod...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW B: SENARAI AHLI (MEMBER LIST)         -->
+      <!-- ========================================== -->
+      <section id="view-members" class="view-container hidden">
+        <div class="flex justify-between items-center" style="margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900);">Senarai Ahli</h2>
+            <p style="font-size: 12px; color: var(--slate-500);">Pangkalan data ahli berdaftar dalam sistem.</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="exportToExcelDirect()" class="btn btn-secondary">
+              📥 Eksport Excel
+            </button>
+            <button onclick="switchTab('register')" class="btn btn-primary">
+              ➕ Daftar Ahli
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="card" style="padding: 14px;">
+          <div class="flex gap-2">
+            <input id="input-search" type="text" oninput="handleSearchDebounced()" placeholder="Cari nama, no telefon, ID ahli, NRIC..." class="form-control" />
+            <button onclick="toggleFilterModal(true)" class="btn btn-secondary">
+              Filter
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Nama Penuh</th>
+                <th>Telefon</th>
+                <th>NRIC</th>
+                <th>Sponsor</th>
+                <th>Tarikh</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: right;">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="members-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-between items-center" style="margin-top: 14px; font-size: 12px; color: var(--slate-500);">
+          <span id="pagination-info">Halaman 1</span>
+          <div class="flex gap-2">
+            <button id="btn-page-prev" onclick="changePage(-1)" class="btn btn-secondary btn-sm">← Sebelumnya</button>
+            <button id="btn-page-next" onclick="changePage(1)" class="btn btn-secondary btn-sm">Seterusnya →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW C: DAFTAR AHLI (REGISTER FORM)        -->
+      <!-- ========================================== -->
+      <section id="view-register" class="view-container hidden" style="max-width: 600px;">
+        <div class="card">
+          <div style="margin-bottom: 20px;">
+            <span class="badge badge-active">BORANG RASMI</span>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900); margin-top: 8px;">Daftar Ahli Baru</h2>
+            <p style="font-size: 12px; color: var(--slate-500);">Member ID dijana secara automatik dengan perlindungan duplikasi.</p>
+          </div>
+
+          <form id="form-register" onsubmit="handleRegisterSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">NAMA PENUH *</label>
+              <input id="reg-nama" type="text" required placeholder="Ahmad bin Ali" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">NO TELEFON *</label>
+              <input id="reg-telefon" type="tel" required placeholder="011-88887777" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">NRIC (12 DIGIT) *</label>
+              <input id="reg-nric" type="text" required maxlength="14" placeholder="900101-02-1234" class="form-control font-mono" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">EMAIL (PILIHAN)</label>
+              <input id="reg-email" type="email" placeholder="nama@email.com" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ID SPONSOR (PILIHAN)</label>
+              <input id="reg-sponsor" type="text" placeholder="SP-0001 / MBR-000001" class="form-control font-mono" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ALAMAT PENUH *</label>
+              <textarea id="reg-alamat" required placeholder="Masukkan alamat kediaman lengkap..." class="form-control"></textarea>
+            </div>
+
+            <button id="btn-submit-reg" type="submit" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 15px; margin-top: 10px;">
+              ✓ DAFTAR AHLI
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW D: SKRIN KEJAYAAN (SUCCESS SCREEN)    -->
+      <!-- ========================================== -->
+      <section id="view-success" class="view-container hidden" style="max-width: 550px;">
+        <div class="card text-center">
+          <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+          <span class="badge badge-active">PENDAFTARAN BERJAYA</span>
+          <h2 style="font-size: 22px; font-weight: 800; color: var(--slate-900); margin-top: 8px;">Ahli Berjaya Didaftarkan</h2>
+          <p style="font-size: 12px; color: var(--slate-500); margin-top: 4px;">Rekod telah disimpan ke pangkalan data.</p>
+
+          <div style="background-color: var(--slate-900); color: #ffffff; padding: 20px; border-radius: var(--radius-lg); margin: 20px 0;">
+            <div style="font-size: 11px; color: var(--primary-400); font-weight: 700; letter-spacing: 0.05em;">MEMBER ID (JANAAN AUTOMATIK)</div>
+            <div id="success-member-id" class="font-mono" style="font-size: 32px; font-weight: 800; margin: 8px 0;">MBR-000000</div>
+            <div id="success-member-sub" style="font-size: 12px; color: var(--slate-400);">Nama • Telefon</div>
+            <div style="margin-top: 12px;">
+              <button onclick="copySuccessId()" id="btn-copy-id" class="btn btn-secondary btn-sm" style="background-color: var(--slate-800); color: var(--primary-200); border-color: var(--slate-700);">
+                SALIN ID
+              </button>
+            </div>
+          </div>
+
+          <a id="success-wa-member-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 16px;">
+            💬 HANTAR WHATSAPP KEPADA AHLI
+          </a>
+
+          <div style="background-color: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 14px; text-align: left; margin-bottom: 20px;">
+            <div class="flex justify-between items-center">
+              <strong style="font-size: 12px; color: var(--slate-700);">Notifikasi WhatsApp Admin:</strong>
+              <span class="badge badge-active" style="font-size: 10px;">SEDIA DIHANTAR</span>
+            </div>
+            <p style="font-size: 11px; color: var(--slate-500); margin: 6px 0 10px;">Tekan butang di bawah untuk membuka aplikasi WhatsApp dan menghantar maklumat ke admin.</p>
+            <a id="success-wa-admin-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">
+              Buka WhatsApp Admin
+            </a>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="switchTab('register')" class="btn btn-dark" style="flex: 1;">+ DAFTAR AHLI BARU</button>
+            <button onclick="switchTab('members')" class="btn btn-secondary" style="flex: 1;">Lihat Senarai Ahli →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW E: LAPORAN (REPORT VIEW)              -->
+      <!-- ========================================== -->
+      <section id="view-report" class="view-container hidden">
+        <div style="margin-bottom: 20px;">
+          <span class="badge badge-active">MODUL LAPORAN</span>
+          <h2 style="font-size: 22px; font-weight: 800; color: var(--slate-900); margin-top: 6px;">Member Report & Analytics</h2>
+          <p style="font-size: 12px; color: var(--slate-500);">Jana analisis data keahlian dan muat turun fail laporan.</p>
+        </div>
+
+        <div class="card" style="background-color: var(--slate-900); color: #ffffff;">
+          <h3 style="font-size: 14px; font-weight: 700; color: var(--primary-400);">Muat Turun Laporan Penuh</h3>
+          <p style="font-size: 12px; color: var(--slate-300); margin-top: 4px;">Eksport rekod ahli terus ke fail Microsoft Excel (.xlsx), CSV, atau cetakan PDF.</p>
+          <div class="flex gap-2 mt-4" style="flex-wrap: wrap;">
+            <button onclick="exportToExcelDirect()" class="btn btn-primary">
+              📥 EXPORT EXCEL (.xlsx)
+            </button>
+            <button onclick="exportToCSVDirect()" class="btn btn-secondary" style="background-color: var(--slate-800); color: #ffffff; border-color: var(--slate-700);">
+              📄 EXPORT CSV (.csv)
+            </button>
+            <button onclick="window.print()" class="btn btn-secondary" style="background-color: var(--slate-800); color: #ffffff; border-color: var(--slate-700);">
+              🖨 CETAK / PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size: 15px; font-weight: 700; color: var(--slate-900); margin-bottom: 12px;">Pra-tonton Data Keahlian</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Member ID</th>
+                  <th>Nama Penuh</th>
+                  <th>Telefon</th>
+                  <th>Sponsor</th>
+                  <th>Tarikh</th>
+                  <th style="text-align: center;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="report-preview-body">
+                <!-- Preview items -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW F: WHATSAPP GATEWAY                   -->
+      <!-- ========================================== -->
+      <section id="view-whatsapp" class="view-container hidden">
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900); margin-bottom: 16px;">WhatsApp Gateway Logs</h2>
+        <div class="card">
+          <div id="wa-logs-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW G: AUDIT LOGS                         -->
+      <!-- ========================================== -->
+      <section id="view-logs" class="view-container hidden">
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900); margin-bottom: 16px;">Audit & Activity Trail</h2>
+        <div class="card">
+          <div id="activity-logs-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW H: SETTINGS                           -->
+      <!-- ========================================== -->
+      <section id="view-settings" class="view-container hidden" style="max-width: 700px;">
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900); margin-bottom: 16px;">Tetapan Sistem</h2>
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">PREFIX MEMBER ID</label>
+            <input id="set-prefix" type="text" value="MBR-" class="form-control font-mono" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">DIGIT NOMBOR</label>
+            <input id="set-digits" type="number" value="6" min="4" max="10" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">NOMBOR WHATSAPP ADMIN</label>
+            <input id="set-admin-phone" type="text" value="601120798015" class="form-control font-mono" />
+          </div>
+          <button onclick="handleSaveSettings()" class="btn btn-primary">Simpan Tetapan</button>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 700; color: var(--slate-900); margin-bottom: 8px;">Pengurusan Data Demo</h3>
+          <p style="font-size: 12px; color: var(--slate-500); margin-bottom: 14px;">Muat 6 rekod contoh untuk ujian atau kosongkan pangkalan data.</p>
+          <div class="flex gap-2">
+            <button onclick="seedDemoData()" class="btn btn-secondary btn-sm">+ Muat 6 Rekod Demo</button>
+            <button onclick="clearAllDataPrompt()" class="btn btn-danger btn-sm">Kosongkan Data</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- 3. BOTTOM NAVIGATION (MOBILE)                           -->
+  <!-- ======================================================= -->
+  <nav id="bottom-nav">
+    <button onclick="switchTab('dashboard')" class="bottom-tab active">
+      <span style="font-size: 18px;">📊</span>
+      <span>Utama</span>
+    </button>
+    <button onclick="switchTab('members')" class="bottom-tab">
+      <span style="font-size: 18px;">👥</span>
+      <span>Ahli</span>
+    </button>
+    <button onclick="switchTab('register')" class="bottom-tab">
+      <div class="bottom-tab-center">➕</div>
+      <span>Daftar</span>
+    </button>
+    <button onclick="switchTab('report')" class="bottom-tab">
+      <span style="font-size: 18px;">📑</span>
+      <span>Laporan</span>
+    </button>
+    <button onclick="switchTab('settings')" class="bottom-tab">
+      <span style="font-size: 18px;">⚙️</span>
+      <span>Tetapan</span>
+    </button>
+  </nav>
+
+  <!-- ======================================================= -->
+  <!-- 4. MODALS (DETAIL, EDIT, LOGIN)                         -->
+  <!-- ======================================================= -->
+
+  <!-- Modal Detail -->
+  <div id="modal-detail" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="flex justify-between items-center" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--slate-100);">
+        <div>
+          <span class="badge badge-active">MAKLUMAT KEAHLIAN</span>
+          <h3 id="modal-detail-id" class="font-mono" style="font-size: 20px; font-weight: 800; color: var(--slate-900); margin-top: 4px;">MBR-000000</h3>
+        </div>
+        <button onclick="closeDetailModal()" class="btn btn-secondary btn-sm">✕</button>
+      </div>
+      <div id="modal-detail-content" style="font-size: 13px;"></div>
+      <div class="flex justify-between items-center mt-4 pt-3" style="border-top: 1px solid var(--slate-100);">
+        <button onclick="closeDetailModal()" class="btn btn-dark btn-sm">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Login -->
+  <div id="login-modal-screen" class="modal-backdrop hidden">
+    <div class="modal-card text-center">
+      <div class="brand-icon" style="margin: 0 auto 12px; width: 50px; height: 50px; font-size: 24px;">🏛️</div>
+      <h2 style="font-size: 20px; font-weight: 800; color: var(--slate-900);">Portal Pentadbir</h2>
+      <p style="font-size: 12px; color: var(--slate-500); margin-bottom: 20px;">Sistem Pengurusan Keahlian</p>
+
+      <form onsubmit="handleLoginSubmit(event)">
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">NAMA PENGGUNA</label>
+          <input id="login-username" type="text" value="admin" required class="form-control" />
+        </div>
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label">KATA LALUAN</label>
+          <input id="login-password" type="password" value="admin123" required class="form-control" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">LOG MASUK</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script Aplikasi Javascript Tulen -->
+  <script src="app.js"></script>
+</body>
+</html>
